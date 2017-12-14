@@ -31,8 +31,8 @@ var cmd_signer=function(args,callback) {
 }
 
 var cmd_receipt=function(args,callback) {	
-	const IPFS = require('ipfs');
-	const ipfs = new IPFS();
+	if(typeof args.options.ipfs != "undefined") const IPFS = require('ipfs');
+	if(typeof args.options.ipfs != "undefined")const ipfs = new IPFS();
 	var node = new StromDAOBO.Node({external_id:"signer",testMode:true,rpc:global.rpcprovider});
 	
 	if((fs.existsSync(args.options.f+".contrl"))||(fs.existsSync(args.options.f+".aperak"))) {
@@ -90,26 +90,40 @@ var cmd_receipt=function(args,callback) {
 	  return;
 	}
 	
-
-	ipfs.on('ready', () => {
-		ipfs.files.add({path:'/receipt.json',content:new ipfs.types.Buffer(JSON.stringify(json),'utf-8')}, function (err, files) {
-			var ipfs_hash=files[0].hash;				
-			node.stringstoragefactory().then(function(ssf) {
-				ssf.build(ipfs_hash).then(function(tx) {
-					node.stromkonto("0x19BF166624F485f191d82900a5B7bc22Be569895").then(function(sko) {
-						sko.addTx(tx,json.by,session.value.bonus,session.value.ee).then(function(rx) {
-							var rcpt={};
-							rcpt.ipfs_hash=ipfs_hash;
-							rcpt.bc=tx;
-							rcpt.tx=rx;
-							if(typeof args.options.c != "undefined") { fs.writeFileSync(args.options.f+".contrl",JSON.stringify(rcpt)); } else { vorpal.log(rcpt); }
-							callback();
-						});
-					});					
+	if(typeof args.options.ipfs != "undefined") {
+		ipfs.on('ready', () => {
+			ipfs.files.add({path:'/receipt.json',content:new ipfs.types.Buffer(JSON.stringify(json),'utf-8')}, function (err, files) {
+				var ipfs_hash=files[0].hash;				
+				node.stringstoragefactory().then(function(ssf) {
+					ssf.build(ipfs_hash).then(function(tx) {
+						node.stromkonto("0x19BF166624F485f191d82900a5B7bc22Be569895").then(function(sko) {
+							sko.addTx(tx,json.by,session.value.bonus,session.value.ee).then(function(rx) {
+								var rcpt={};
+								rcpt.ipfs_hash=ipfs_hash;
+								rcpt.bc=tx;
+								rcpt.tx=rx;
+								if(typeof args.options.c != "undefined") { fs.writeFileSync(args.options.f+".contrl",JSON.stringify(rcpt)); } else { vorpal.log(rcpt); }
+								callback();
+							});
+						});					
+					});
 				});
 			});
-		});
-	});		
+		});		
+	} else {
+		var ipfs_hash="none";				
+		node.stromkonto("0x19BF166624F485f191d82900a5B7bc22Be569895").then(function(sko) {
+			sko.addTx(session.start.gsi.by,json.by,session.value.bonus,session.value.ee).then(function(rx) {
+				var rcpt={};
+				rcpt.ipfs_hash="none";
+				rcpt.bc=session.start.gsi.by;
+				rcpt.tx=rx;
+				if(typeof args.options.c != "undefined") { fs.writeFileSync(args.options.f+".contrl",JSON.stringify(rcpt)); } else { vorpal.log(rcpt); }
+				callback();
+			});
+		});					
+		
+	}
 }
 
 var cmd_gsi=function(args,callback) {	
@@ -173,6 +187,7 @@ vorpal
   .description("Create receipt of file") 
   .option('-c', 'Create contrl or aperak file')
   .option('-f <filepath>', 'File to create receipt')
+  .option('--ipfs','Share on IPFS')
   .types({
     string: ['d']
   })  
