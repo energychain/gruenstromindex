@@ -115,7 +115,7 @@ var cmd_receipt=function(args,callback) {
 	} else {
 		var ipfs_hash="none";				
 		node.stromkonto("0x19BF166624F485f191d82900a5B7bc22Be569895").then(function(sko) {
-			sko.addTx(session.start.gsi.by,json.by,session.value.bonus,session.value.ee).then(function(rx) {
+			sko.addTx(session.start.gsi.by,json.by,session.value.bonus,session.value.power).then(function(rx) {
 				var rcpt={};
 				rcpt.ipfs_hash="none";
 				rcpt.bc=session.start.gsi.by;
