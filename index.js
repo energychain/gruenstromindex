@@ -32,6 +32,18 @@ var cmd_gsi=function(args,callback) {
 	vorpal.log=function(msg){};
 	var data=srequest("GET","https://mix.stromhaltig.de/gsi/json/idx/"+args.options.p+".json").body.toString();	
 	var json=JSON.parse(data);
+	if(typeof args.options.n != "undefined") {
+		var nj=[];
+		json.forEach(function(a,b) {
+			if(a.eevalue>70) {
+				a.value=args.options.n*a.eevalue;
+			} else {
+				a.value=0;
+			}
+			nj.push(a);
+		});
+		json=nj;
+	}
 	if(typeof args.options.s != "undefined") {
 			var signed={};
 			var node = new StromDAOBO.Node({external_id:"signer",testMode:true,rpc:global.rpcprovider});	
@@ -76,6 +88,7 @@ vorpal
   .description("Get Green Power Index (Germany)") 
   .option('-s','Sign Index')
   .option('-p <plz>', 'Zip Code of City')
+  .option('-n <value>','Value of grid benefit')
   .types({
     string: ['p']
   })  
