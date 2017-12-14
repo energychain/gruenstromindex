@@ -3,6 +3,7 @@
 const vorpal = require('vorpal')();
 global.rpcprovider="https://fury.network/rpc";
 var StromDAOBO = require("stromdao-businessobject");    
+var srequest = require('sync-request');
 
 var cmd_sign=function(args,callback) {
 	var node = new StromDAOBO.Node({external_id:"signer",testMode:true,rpc:global.rpcprovider});		
