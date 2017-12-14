@@ -31,8 +31,10 @@ var cmd_signer=function(args,callback) {
 }
 
 var cmd_receipt=function(args,callback) {	
-	if(typeof args.options.ipfs != "undefined") const IPFS = require('ipfs');
-	if(typeof args.options.ipfs != "undefined")const ipfs = new IPFS();
+	if(typeof args.options.ipfs != "undefined") { 
+		const IPFS = require('ipfs');
+		const ipfs = new IPFS();
+	}
 	var node = new StromDAOBO.Node({external_id:"signer",testMode:true,rpc:global.rpcprovider});
 	
 	if((fs.existsSync(args.options.f+".contrl"))||(fs.existsSync(args.options.f+".aperak"))) {
