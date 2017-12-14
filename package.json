@@ -1,6 +1,6 @@
 {
   "name": "gruenstromindex",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Integration des Gruenstromindex in CLI Anwendungen",
   "main": "index.js",
   "scripts": {
@@ -28,6 +28,7 @@
   "homepage": "https://github.com/energychain/gruenstromindex#readme",
   "dependencies": {
     "stromdao-businessobject": "^0.5.27",
-    "stromdao-cli-helper": "^0.0.5"
+    "stromdao-cli-helper": "^0.0.5",
+    "sync-request": "^4.1.0"
   }
 }
