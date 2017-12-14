@@ -1,6 +1,6 @@
 {
   "name": "gruenstromindex",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Integration des Gruenstromindex in CLI Anwendungen",
   "main": "index.js",
   "scripts": {
@@ -18,7 +18,7 @@
   ],
   "bin": {
     "stromdao-gsi": "./index.js",
-    "gsi": "./index.js"    
+    "gsi": "./index.js"
   },
   "author": "Thorsten Zoerner <thorsten.zoerner@stromdao.de>",
   "license": "MIT",
@@ -27,6 +27,7 @@
   },
   "homepage": "https://github.com/energychain/gruenstromindex#readme",
   "dependencies": {
+    "ipfs": "^0.27.4",
     "stromdao-businessobject": "^0.5.27",
     "stromdao-cli-helper": "^0.0.5",
     "sync-request": "^4.1.0"
