@@ -9,7 +9,7 @@ var srequest = require('sync-request');
 
 
 var cmd_sign=function(args,callback) {
-	var node = new StromDAOBO.Node({external_id:"signer",testMode:true,rpc:global.rpcprovider});		
+	var node = new StromDAOBO.Node({external_id:"stromdao-mp",testMode:true,rpc:global.rpcprovider});		
 	var signature= node.sign(args.value);
 	vorpal.log(signature);	
 	if(typeof callback != "undefined") callback();
@@ -17,14 +17,14 @@ var cmd_sign=function(args,callback) {
 }
 
 var cmd_verify=function(args,callback) {
-	var node = new StromDAOBO.Node({external_id:"signer",testMode:true,rpc:global.rpcprovider});		
+	var node = new StromDAOBO.Node({external_id:"stromdao-mp",testMode:true,rpc:global.rpcprovider});		
 	verification=node.verify(args.options.h);	
 	vorpal.log(verification);	
 	if(typeof callback != "undefined") callback();
 	return verification;
 }
 var cmd_signer=function(args,callback) {
-	var node = new StromDAOBO.Node({external_id:"signer",testMode:true,rpc:global.rpcprovider});			
+	var node = new StromDAOBO.Node({external_id:"stromdao-mp",testMode:true,rpc:global.rpcprovider});			
 	vorpal.log(node.wallet.address);	
 	if(typeof callback != "undefined") callback();
 	return node.wallet.address();
@@ -35,7 +35,7 @@ var cmd_receipt=function(args,callback) {
 		const IPFS = require('ipfs');
 		const ipfs = new IPFS();
 	}
-	var node = new StromDAOBO.Node({external_id:"signer",testMode:true,rpc:global.rpcprovider});
+	var node = new StromDAOBO.Node({external_id:"stromdao-mp",testMode:true,rpc:global.rpcprovider});
 	
 	if((fs.existsSync(args.options.f+".contrl"))||(fs.existsSync(args.options.f+".aperak"))) {
 		vorpal.log("ERR: .contrl or .aperak exists for "+args.options.f);
@@ -98,7 +98,7 @@ var cmd_receipt=function(args,callback) {
 				var ipfs_hash=files[0].hash;				
 				node.stringstoragefactory().then(function(ssf) {
 					ssf.build(ipfs_hash).then(function(tx) {
-						node.stromkonto(global.smart_contract_stromkonto).then(function(sko) {
+						node.stromkontoproxy(global.smart_contract_stromkonto).then(function(sko) {
 							sko.addTx(tx,json.by,session.value.bonus,session.value.power).then(function(rx) {
 								var rcpt={};
 								rcpt.ipfs_hash=ipfs_hash;
@@ -115,7 +115,7 @@ var cmd_receipt=function(args,callback) {
 		});		
 	} else {
 		var ipfs_hash="none";				
-		node.stromkonto(global.smart_contract_stromkonto).then(function(sko) {
+		node.stromkontoproxy(global.smart_contract_stromkonto).then(function(sko) {
 			sko.addTx(session.start.gsi.by,json.by,session.value.bonus,session.value.power).then(function(rx) {
 				var rcpt={};
 				rcpt.ipfs_hash="none";
@@ -149,7 +149,7 @@ var cmd_gsi=function(args,callback) {
 	}
 	if(typeof args.options.s != "undefined") {
 			var signed={};
-			var node = new StromDAOBO.Node({external_id:"signer",testMode:true,rpc:global.rpcprovider});	
+			var node = new StromDAOBO.Node({external_id:"stromdao-mp",testMode:true,rpc:global.rpcprovider});	
 			var msg={};
 			msg.time=new Date().getTime();		
 			msg.plz=args.options.p;		
