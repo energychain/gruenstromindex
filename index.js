@@ -98,12 +98,13 @@ var cmd_receipt=function(args,callback) {
 				var ipfs_hash=files[0].hash;				
 				node.stringstoragefactory().then(function(ssf) {
 					ssf.build(ipfs_hash).then(function(tx) {
-						node.stromkonto("0x19BF166624F485f191d82900a5B7bc22Be569895").then(function(sko) {
-							sko.addTx(tx,json.by,session.value.bonus,session.value.ee).then(function(rx) {
+						node.stromkonto(global.smart_contract_stromkonto).then(function(sko) {
+							sko.addTx(tx,json.by,session.value.bonus,session.value.power).then(function(rx) {
 								var rcpt={};
 								rcpt.ipfs_hash=ipfs_hash;
 								rcpt.bc=tx;
 								rcpt.tx=rx;
+								rcpt.blg=global.smart_contract_stromkonto;
 								if(typeof args.options.c != "undefined") { fs.writeFileSync(args.options.f+".contrl",JSON.stringify(rcpt)); } else { vorpal.log(rcpt); }
 								callback();
 							});
@@ -114,12 +115,13 @@ var cmd_receipt=function(args,callback) {
 		});		
 	} else {
 		var ipfs_hash="none";				
-		node.stromkonto("0x19BF166624F485f191d82900a5B7bc22Be569895").then(function(sko) {
+		node.stromkonto(global.smart_contract_stromkonto).then(function(sko) {
 			sko.addTx(session.start.gsi.by,json.by,session.value.bonus,session.value.power).then(function(rx) {
 				var rcpt={};
 				rcpt.ipfs_hash="none";
 				rcpt.bc=session.start.gsi.by;
 				rcpt.tx=rx;
+				rcpt.blg=global.smart_contract_stromkonto;
 				if(typeof args.options.c != "undefined") { fs.writeFileSync(args.options.f+".contrl",JSON.stringify(rcpt)); } else { vorpal.log(rcpt); }
 				callback();
 			});
