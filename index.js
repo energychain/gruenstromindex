@@ -167,6 +167,7 @@ var cmd_gsi=function(args,callback) {
 			msg.tarif.microCentPerWh=tarif.ap*1000000;
 			msg.tarif.microCentBonusPerKWh=args.options.n;
 			msg.tarif.centPerYear=tarif.gp*1200;			
+			msg.offer=json;
 			msg.gsi=JSON.stringify(json);			
 			signed.hash=node.hash(msg);
 			args.value=msg;
