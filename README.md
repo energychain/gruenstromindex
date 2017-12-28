@@ -1,6 +1,7 @@
 # Grünstromindex
 Grünstrom Index zur Behandlung von Netzdienlichkeit und Berechnung dynamischer/variabler Stromtarife
 
+
 ## Installation
 ```
 npm install -g gruenstromindex
@@ -20,3 +21,11 @@ stromdao-gsi help
     webuser [options] <meter_point_id>  Create a new webuser (or overwrite) with given credentials
     backup <zipfilename>                Exports local storage to zip file.
 ```
+
+## Beispiele
+Ermitteln eines Strompreises für die kommenden Stunden mit einem Bonus von 5 Cent in 69256 Mauer.
+```
+stromdao-gsi gsi -p 69256 -s -n 5000000
+```
+
+

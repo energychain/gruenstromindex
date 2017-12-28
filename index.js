@@ -134,15 +134,23 @@ var cmd_gsi=function(args,callback) {
 	logging=vorpal.log;
 	vorpal.log=function(msg){};
 	var data=srequest("GET","https://mix.stromhaltig.de/gsi/json/idx/"+args.options.p+".json").body.toString();	
+	var data2=srequest("GET","https://stromdao.de/crm/service/tarif/?plz="+args.options.p+"").body.toString();	
 	var json=JSON.parse(data);
+	var tarif=JSON.parse(data2);
 	if(typeof args.options.n != "undefined") {
 		var nj=[];
 		json.forEach(function(a,b) {
+			a.price={};
+			a.price.microCentPerWh=(tarif.ap*1000000);		
+				
 			if(a.eevalue>70) {
-				a.value=args.options.n*a.eevalue;
+				a.value=args.options.n*a.eevalue;	
+				a.price.microCentPerWh=(tarif.ap*1000000)-(args.options.n*(a.eevalue/100));				
 			} else {
 				a.value=0;
 			}
+			a.price.microCentPerHour=Math.round((tarif.gp*100000000)/8760);
+			a.price.centPerWh=Math.round(a.price.microCentPerWh/1000000);
 			nj.push(a);
 		});
 		json=nj;
@@ -153,6 +161,12 @@ var cmd_gsi=function(args,callback) {
 			var msg={};
 			msg.time=new Date().getTime();		
 			msg.plz=args.options.p;		
+			msg.tarif={};
+			msg.tarif.centPerKWh=tarif.ap;
+			msg.tarif.microCentPerHour=Math.round((tarif.gp*100000000)/8760);
+			msg.tarif.microCentPerWh=tarif.ap*1000000;
+			msg.tarif.microCentBonusPerKWh=args.options.n;
+			msg.tarif.centPerYear=tarif.gp*100;			
 			msg.gsi=JSON.stringify(json);			
 			signed.hash=node.hash(msg);
 			args.value=msg;
