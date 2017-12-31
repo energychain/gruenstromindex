@@ -179,10 +179,10 @@ var cmd_eei=function(args,callback) {
 				signed.by=node.wallet.address;
 				json=signed;		
 		}	
-		//vorpal.log=logging;
+		vorpal.log=logging;
 		vorpal.log(JSON.stringify(json));
-		if(typeof callback == "function") callback();
-		return json;	
+		if(typeof callback != "undefined") callback();
+		return json;		
 	}
 }
 

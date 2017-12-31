@@ -1,6 +1,6 @@
 {
   "name": "gruenstromindex",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "Integration des Gruenstromindex in CLI Anwendungen",
   "main": "index.js",
   "scripts": {
