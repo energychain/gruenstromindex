@@ -215,8 +215,13 @@ var cmd_fetchentsoe=function(args,callback) {
    entsoeApi.getData(query.dayAheadTotalLoadForecast(),function(data) {				
 		var ret=ENTSOEapi.parseData(data);	
 		// 3 mal TimeSeries[0] Fix entfernt
-		res.start=new Date(JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.timeInterval.start).getTime();
-		res.end=new Date(JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.timeInterval.end).getTime();		
+		try {
+			res.start=new Date(JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.timeInterval.start).getTime();
+			res.end=new Date(JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.timeInterval.end).getTime();		
+		} catch(e) {
+			var last_update=node.storage.setItemSync("entsoe_update",new Date().getTime()-3200000);
+			if(typeof callback!="undefined") callback(args,null);
+		}
 		res.periods=[];
 		var p=JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.Point;
 		for(var i=0;i<p.length;i++) {
@@ -254,7 +259,7 @@ var cmd_fetchentsoe=function(args,callback) {
 						var node = new StromDAOBO.Node({external_id:"stromdao-mp",testMode:true,rpc:global.rpcprovider});	
 						var last_update=node.storage.setItemSync("entsoe_update",new Date().getTime());										
 						var entsoe_data=node.storage.setItemSync("entsoe_data",JSON.stringify(res));
-						callback(args,null);
+						if(typeof callback!="undefined") callback(args,null);
 					}
 				});
 			}						

@@ -28,4 +28,9 @@ Ermitteln eines Strompreises für die kommenden Stunden mit einem Bonus von 5 Ce
 stromdao-gsi gsi -p 69256 -s -n 5000000
 ```
 
+## Verwendungsbeispiele:
+### Autostrom der STROMDAO
+https://autostrom.stromdao.de/
 
+### Dynamischer Grünstromtarif 
+https://stromhaltig.de/strompreis/
