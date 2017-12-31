@@ -7,6 +7,7 @@ global.rpcprovider="https://fury.network/rpc";
 var StromDAOBO = require("stromdao-businessobject");    
 var srequest = require('sync-request');
 
+require('dotenv').config();
 
 var cmd_sign=function(args,callback) {
 	var node = new StromDAOBO.Node({external_id:"stromdao-mp",testMode:true,rpc:global.rpcprovider});		
@@ -130,6 +131,136 @@ var cmd_receipt=function(args,callback) {
 	}
 }
 
+var cmd_eei=function(args,callback) {	
+	var node = new StromDAOBO.Node({external_id:"stromdao-mp",testMode:true,rpc:global.rpcprovider});	
+	var last_update=node.storage.getItemSync("entsoe_update");
+	if((typeof last_update == "undefined")||(last_update==null)||(last_update<new Date().getTime()-4320000)) {
+			cmd_fetchentsoe(args,cmd_eei);
+	} else {
+		var json=JSON.parse(node.storage.getItemSync("entsoe_data")).periods;
+		var data2=srequest("GET","https://stromdao.de/crm/service/tarif/?plz="+args.options.p+"&gp=2&ap=2").body.toString();	
+		var tarif=JSON.parse(data2);
+		
+		if(typeof args.options.n != "undefined") {
+			var nj=[];
+			json.forEach(function(a,b) {
+				a.price={};
+				a.price.microCentPerWh=(tarif.ap*1000000);		
+
+				a.value=args.options.n*a.eei;	
+				a.price.microCentPerWh=(tarif.ap*1000000)-(args.options.n*(a.eei/100));				
+				
+				a.price.microCentPerHour=Math.round((tarif.gp*100000000)/8760);
+				a.price.centPerWh=Math.round(a.price.microCentPerWh/1000000);
+				nj.push(a);
+			});
+			json=nj;
+		}
+		if(typeof args.options.s != "undefined") {
+				var signed={};
+				var node = new StromDAOBO.Node({external_id:"stromdao-mp",testMode:true,rpc:global.rpcprovider});	
+				var msg={};
+				msg.time=new Date().getTime();		
+				msg.plz=args.options.p;		
+				msg.tarif={};
+				msg.tarif.centPerKWh=tarif.ap;
+				msg.tarif.microCentPerHour=Math.round((tarif.gp*100000000)/8760);
+				msg.tarif.microCentPerWh=tarif.ap*1000000;
+				msg.tarif.microCentBonusPerKWh=args.options.n;
+				msg.tarif.centPerYear=tarif.gp*1200;			
+				msg.offer=json;
+				msg.gsi=JSON.stringify(json);			
+				signed.hash=node.hash(msg);
+				args.value=msg;
+				signed.signature=cmd_sign(args);
+				signed.data=msg;
+				signed.by=node.wallet.address;
+				json=signed;		
+		}	
+		//vorpal.log=logging;
+		vorpal.log(JSON.stringify(json));
+		if(typeof callback != "undefined") callback();
+		return json;	
+	}
+}
+
+var cmd_fetchentsoe=function(args,callback) {
+   require("entsoe-api");        
+   vorpal.log=function(msg){};
+   
+   //var data2=srequest("GET","https://stromdao.de/crm/service/tarif/?plz="+args.options.p+"").body.toString();	
+   
+   var entsoeApi = new ENTSOEapi(process.env.ENTSO_WEB_API);
+   entsoeApi.webkey=process.env.ENTSO_WEB_API;
+   periodstart=new Date();
+   periodstart.setDate(periodstart.getDate());
+
+   periodend=new Date();
+   periodend.setDate(periodstart.getDate()+2);
+   
+   var defaults= {
+		outBiddingZone_Domain:'10Y1001A1001A83F',
+		biddingZone_Domain:'10Y1001A1001A83F',
+		in_Domain:'10Y1001A1001A83F',
+		out_Domain:'10Y1001A1001A83F',
+		periodStart:ENTSOEapi.buildPeriod(periodstart),
+		periodEnd:ENTSOEapi.buildPeriod(periodend)
+   }
+   var query = new ENTSOEapi.query(defaults);
+   // Retrieve Load 
+   var res={};
+   
+   entsoeApi.getData(query.dayAheadTotalLoadForecast(),function(data) {				
+		var ret=ENTSOEapi.parseData(data);	
+		// 3 mal TimeSeries[0] Fix entfernt
+		res.start=new Date(JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.timeInterval.start).getTime();
+		res.end=new Date(JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.timeInterval.end).getTime();		
+		res.periods=[];
+		var p=JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.Point;
+		for(var i=0;i<p.length;i++) {
+				var r = {};
+				r.time=res.start+(i*90000);
+				r.load=p[i].quantity*1;
+				res.periods.push(r);			
+		}
+		var q_solar=query.dayAheadGenerationForecastWindAndSolar();
+		q_solar.psrType="B16";
+		entsoeApi.getData(q_solar,function(data) {	
+			
+			var ret=ENTSOEapi.parseData(data);				
+			if(res.start!=new Date(JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.timeInterval.start).getTime()) {
+				console.log("ERR: Periods do not match!");
+				callback();
+			} else {
+				var p=JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.Point;
+				for(var i=0;i<p.length;i++) {
+						res.periods[i].solar=p[i].quantity*1;
+				}
+				var q_wind=query.dayAheadGenerationForecastWindAndSolar();
+				q_wind.psrType="B19";
+				entsoeApi.getData(q_wind,function(data) {						
+					var ret=ENTSOEapi.parseData(data);							
+					if(res.start!=new Date(JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.timeInterval.start).getTime()) {
+						console.log("ERR: Periods do not match!");
+						callback();
+					} else {
+						var p=JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.Point;
+						for(var i=0;i<p.length;i++) {
+								res.periods[i].wind=p[i].quantity*1;
+								res.periods[i].eei=Math.round(((res.periods[i].wind+res.periods[i].solar)/res.periods[i].load)*100);
+						}
+						var node = new StromDAOBO.Node({external_id:"stromdao-mp",testMode:true,rpc:global.rpcprovider});	
+						var last_update=node.storage.setItemSync("entsoe_update",new Date().getTime());										
+						var entsoe_data=node.storage.setItemSync("entsoe_data",JSON.stringify(res));
+						callback(args,null);
+					}
+				});
+			}						
+		});
+		
+		
+	});
+}
 var cmd_gsi=function(args,callback) {	
 	logging=vorpal.log;
 	vorpal.log=function(msg){};
@@ -186,6 +317,17 @@ vorpal
   .command('signer')    
   .description("Prints current Message Signer")   
   .action(cmd_signer);	
+  
+vorpal
+  .command('eei')    
+  .description("Renewable Energy Index Germany") 
+  .option('-s','Sign Index')
+  .option('-p <plz>', 'Zip Code of City')
+  .option('-n <value>','Value of sur charge')
+  .types({
+    string: ['p']
+  })   
+  .action(cmd_eei);	  
   
 vorpal
   .command('sign <value>')    
