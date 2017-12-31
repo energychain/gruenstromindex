@@ -132,13 +132,15 @@ var cmd_receipt=function(args,callback) {
 }
 
 var cmd_eei=function(args,callback) {	
+	logging=vorpal.log;
+	vorpal.log=function(msg){};
 	var node = new StromDAOBO.Node({external_id:"stromdao-mp",testMode:true,rpc:global.rpcprovider});	
 	var last_update=node.storage.getItemSync("entsoe_update");
 	if((typeof last_update == "undefined")||(last_update==null)||(last_update<new Date().getTime()-4320000)) {
 			cmd_fetchentsoe(args,cmd_eei);
 	} else {
 		var json=JSON.parse(node.storage.getItemSync("entsoe_data")).periods;
-		var data2=srequest("GET","https://stromdao.de/crm/service/tarif/?plz="+args.options.p+"&gp=2&ap=2").body.toString();	
+		var data2=srequest("GET","https://stromdao.de/crm/service/tarif/?plz="+args.options.p+"&gp=2&ap=3").body.toString();	
 		var tarif=JSON.parse(data2);
 		
 		if(typeof args.options.n != "undefined") {
@@ -179,7 +181,7 @@ var cmd_eei=function(args,callback) {
 		}	
 		//vorpal.log=logging;
 		vorpal.log(JSON.stringify(json));
-		if(typeof callback != "undefined") callback();
+		if(typeof callback == "function") callback();
 		return json;	
 	}
 }
