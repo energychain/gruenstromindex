@@ -219,6 +219,7 @@ var cmd_fetchentsoe=function(args,callback) {
 			res.start=new Date(JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.timeInterval.start).getTime();
 			res.end=new Date(JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.timeInterval.end).getTime();		
 		} catch(e) {
+			var node = new StromDAOBO.Node({external_id:"stromdao-mp",testMode:true,rpc:global.rpcprovider});	
 			var last_update=node.storage.setItemSync("entsoe_update",new Date().getTime()-3200000);
 			if(typeof callback!="undefined") callback(args,null);
 		}
