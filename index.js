@@ -136,7 +136,7 @@ var cmd_eei=function(args,callback) {
 	vorpal.log=function(msg){};
 	var node = new StromDAOBO.Node({external_id:"stromdao-mp",testMode:true,rpc:global.rpcprovider});	
 	var last_update=node.storage.getItemSync("entsoe_update");
-	if((typeof last_update == "undefined")||(last_update==null)||(last_update<new Date().getTime()-4320000)) {
+	if((typeof last_update == "undefined")||(last_update==null)||(last_update<new Date().getTime()-13200000)) {
 			cmd_fetchentsoe(args,cmd_eei);
 	} else {
 		var json=JSON.parse(node.storage.getItemSync("entsoe_data")).periods;
@@ -221,7 +221,7 @@ var cmd_fetchentsoe=function(args,callback) {
 		var p=JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.Point;
 		for(var i=0;i<p.length;i++) {
 				var r = {};
-				r.time=res.start+(i*90000);
+				r.time=res.start+(i*900000);
 				r.load=p[i].quantity*1;
 				res.periods.push(r);			
 		}
