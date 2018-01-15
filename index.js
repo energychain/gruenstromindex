@@ -138,7 +138,7 @@ var cmd_eei=function(args,callback) {
 	var last_update=node.storage.getItemSync("entsoe_update");
 	if((typeof last_update == "undefined")||(last_update==null)||(last_update<new Date().getTime()-13200000)) {
 			cmd_fetchentsoe(args,cmd_eei);
-	} else {
+	} else {		
 		var json=JSON.parse(node.storage.getItemSync("entsoe_data")).periods;
 		var data2=srequest("GET","https://stromdao.de/crm/service/tarif/?plz="+args.options.p+"&gp=2&ap=3").body.toString();	
 		var tarif=JSON.parse(data2);
@@ -163,6 +163,7 @@ var cmd_eei=function(args,callback) {
 				var node = new StromDAOBO.Node({external_id:"stromdao-mp",testMode:true,rpc:global.rpcprovider});	
 				var msg={};
 				msg.time=new Date().getTime();		
+				msg.timestamp=new Date(msg.time).toLocaleString();
 				msg.plz=args.options.p;		
 				msg.tarif={};
 				msg.tarif.centPerKWh=tarif.ap;
@@ -181,7 +182,7 @@ var cmd_eei=function(args,callback) {
 		}	
 		vorpal.log=logging;
 		vorpal.log(JSON.stringify(json));
-		if(typeof callback != "undefined") callback();
+		if(typeof callback == "function") { callback(); }		 
 		return json;		
 	}
 }
@@ -214,17 +215,24 @@ var cmd_fetchentsoe=function(args,callback) {
    
    entsoeApi.getData(query.dayAheadTotalLoadForecast(),function(data) {				
 		var ret=ENTSOEapi.parseData(data);	
-		// 3 mal TimeSeries[0] Fix entfernt
+		ret=ret.replace("undefined:1","");
+		// 3 mal TimeSeries[0] Fix entfernt			
 		try {
-			res.start=new Date(JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.timeInterval.start).getTime();
-			res.end=new Date(JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.timeInterval.end).getTime();		
+			res.start=new Date(JSON.parse(ret).GL_MarketDocument["time_Period.timeInterval"].start).getTime();
+			res.end=new Date(JSON.parse(ret).GL_MarketDocument["time_Period.timeInterval"].end).getTime();		
 		} catch(e) {
+			console.log(ret);
+			console.log("Error",e);
 			var node = new StromDAOBO.Node({external_id:"stromdao-mp",testMode:true,rpc:global.rpcprovider});	
 			var last_update=node.storage.setItemSync("entsoe_update",new Date().getTime()-3200000);
 			if(typeof callback!="undefined") callback(args,null);
 		}
 		res.periods=[];
-		var p=JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.Point;
+		var doc=JSON.parse(ret);
+		if(doc.GL_MarketDocument.TimeSeries instanceof Array) {			
+			doc.GL_MarketDocument.TimeSeries=doc.GL_MarketDocument.TimeSeries[doc.GL_MarketDocument.TimeSeries.length-1];
+		}
+		var p=doc.GL_MarketDocument.TimeSeries.Period.Point;
 		for(var i=0;i<p.length;i++) {
 				var r = {};
 				r.time=res.start+(i*900000);
@@ -232,27 +240,37 @@ var cmd_fetchentsoe=function(args,callback) {
 				res.periods.push(r);			
 		}
 		var q_solar=query.dayAheadGenerationForecastWindAndSolar();
-		q_solar.psrType="B16";
-		entsoeApi.getData(q_solar,function(data) {	
-			
-			var ret=ENTSOEapi.parseData(data);				
-			if(res.start!=new Date(JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.timeInterval.start).getTime()) {
+		q_solar.psrType="B16";		
+		entsoeApi.getData(q_solar,function(data) {			
+			var ret=ENTSOEapi.parseData(data);	
+			ret=ret.replace("undefined:1","");	
+			var doc=JSON.parse(ret);
+			console.log(doc);
+			if(doc.GL_MarketDocument.TimeSeries instanceof Array) {			
+					doc.GL_MarketDocument.TimeSeries=doc.GL_MarketDocument.TimeSeries[doc.GL_MarketDocument.TimeSeries.length-1];
+			}								
+			if(res.start!=new Date(doc.GL_MarketDocument.TimeSeries.Period.timeInterval.start).getTime()) {
 				console.log("ERR: Periods do not match!");
 				callback();
 			} else {
-				var p=JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.Point;
+				var p=doc.GL_MarketDocument.TimeSeries.Period.Point;
 				for(var i=0;i<p.length;i++) {
 						res.periods[i].solar=p[i].quantity*1;
 				}
 				var q_wind=query.dayAheadGenerationForecastWindAndSolar();
 				q_wind.psrType="B19";
 				entsoeApi.getData(q_wind,function(data) {						
-					var ret=ENTSOEapi.parseData(data);							
-					if(res.start!=new Date(JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.timeInterval.start).getTime()) {
+					var ret=ENTSOEapi.parseData(data);		
+					ret=ret.replace("undefined:1","");		
+					var doc=JSON.parse(ret);
+					if(doc.GL_MarketDocument.TimeSeries instanceof Array) {			
+							doc.GL_MarketDocument.TimeSeries=doc.GL_MarketDocument.TimeSeries[doc.GL_MarketDocument.TimeSeries.length-1];
+					}				
+					if(res.start!=new Date(doc.GL_MarketDocument.TimeSeries.Period.timeInterval.start).getTime()) {
 						console.log("ERR: Periods do not match!");
 						callback();
-					} else {
-						var p=JSON.parse(ret).GL_MarketDocument.TimeSeries.Period.Point;
+					} else {						
+						var p=doc.GL_MarketDocument.TimeSeries.Period.Point;
 						for(var i=0;i<p.length;i++) {
 								res.periods[i].wind=p[i].quantity*1;
 								res.periods[i].eei=Math.round(((res.periods[i].wind+res.periods[i].solar)/res.periods[i].load)*100);
