@@ -154,6 +154,7 @@ var cmd_eei=function(args,callback) {
 				
 				a.price.microCentPerHour=Math.round((tarif.gp*100000000)/8760);
 				a.price.centPerWh=Math.round(a.price.microCentPerWh/1000000);
+				a.price.cashback=Math.round((args.options.n*(a.eei/100));
 				nj.push(a);
 			});
 			json=nj;
